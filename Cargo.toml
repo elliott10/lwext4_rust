@@ -9,5 +9,5 @@ description = "lwext4 in Rust"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+[build-dependencies]
 bindgen = "0.69.1"
