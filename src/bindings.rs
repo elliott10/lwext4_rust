@@ -47,6 +47,7 @@ pub const INTPTR_MAX: u64 = 9223372036854775807;
 pub const UINTPTR_MAX: i32 = -1;
 pub const SIZE_MAX: i32 = -1;
 pub const CONFIG_USE_DEFAULT_CONFIG: u32 = 0;
+pub const CONFIG_DEBUG_PRINTF: u32 = 1;
 pub const CONFIG_HAVE_OWN_OFLAGS: u32 = 0;
 pub const CONFIG_HAVE_OWN_ERRNO: u32 = 0;
 pub const CONFIG_HAVE_OWN_ASSERT: u32 = 0;
@@ -58,7 +59,6 @@ pub const CONFIG_EXT_FEATURE_SET_LVL: u32 = 4;
 pub const CONFIG_JOURNALING_ENABLE: u32 = 1;
 pub const CONFIG_XATTR_ENABLE: u32 = 1;
 pub const CONFIG_EXTENTS_ENABLE: u32 = 1;
-pub const CONFIG_DEBUG_PRINTF: u32 = 1;
 pub const CONFIG_DEBUG_ASSERT: u32 = 1;
 pub const CONFIG_BLOCK_DEV_ENABLE_STATS: u32 = 1;
 pub const CONFIG_EXT4_MAX_BLOCKDEV_NAME: u32 = 32;
@@ -2285,6 +2285,9 @@ extern "C" {
 extern "C" {
     #[doc = "@brief   Create new directory.\n\n @param   path Directory name.\n\n @return  Standard error code."]
     pub fn ext4_dir_mk(path: *const ::core::ffi::c_char) -> ::core::ffi::c_int;
+}
+extern "C" {
+    pub fn ext4_print() -> ::core::ffi::c_int;
 }
 extern "C" {
     #[doc = "@brief   Directory open.\n\n @param   dir  Directory handle.\n @param   path Directory path.\n\n @return  Standard error code."]

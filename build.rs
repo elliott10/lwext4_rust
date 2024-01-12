@@ -13,7 +13,7 @@ fn main() {
 
     generates_bindings_to_rust();
 
-    println!("cargo:rustc-link-lib=lwext4");
+    println!("cargo:rustc-link-lib=static=lwext4");
     println!("cargo:rustc-link-search=native={}", c_path.to_str().unwrap());
     println!("cargo:rerun-if-changed=c/wrapper.h");
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());
