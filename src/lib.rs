@@ -1,10 +1,16 @@
 #![no_std]
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-include!("bindings.rs");
+extern crate alloc;
+
+#[macro_use]
+extern crate log;
+
+// include!("bindings.rs");
+pub mod bindings;
+pub mod blockdev;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
