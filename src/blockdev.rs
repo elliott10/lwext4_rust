@@ -1,4 +1,5 @@
 use crate::bindings::*;
+use crate::types::ForeignOwnable;
 use alloc::boxed::Box;
 use alloc::ffi::CString;
 use alloc::vec::Vec;
@@ -8,28 +9,29 @@ use core::slice::{from_raw_parts, from_raw_parts_mut};
 
 /// Device block size.
 const EXT4_DEV_BSIZE: u32 = 512;
+
 pub trait KernelDevOp {
-    type DevType;
-    fn read(dev: &Self::DevType, buf: &mut [u8]) -> Result<usize, i32>;
-    fn write(dev: &mut Self::DevType, buf: &[u8]) -> Result<usize, i32>;
-    fn seek(dev: &mut Self::DevType, pos: u64, whence: i32) -> Result<usize, i32>;
+    type DevType: ForeignOwnable + Sized + Send + Sync = ();
+
+    fn read(dev: &mut Self::DevType, buf: &mut [u8]) -> Result<usize, i32> where Self: Sized;
+    fn write(dev: &mut Self::DevType, buf: &[u8]) -> Result<usize, i32> where Self: Sized;
+    //fn write(dev: <Self::DevType as ForeignOwnable>::Borrowed<'_>, buf: &[u8]) -> Result<usize, i32>;
+    fn seek(dev: &mut Self::DevType, off: i64, whence: i32) -> Result<i64, i32> where Self: Sized;
+    fn flush(dev: &mut Self::DevType) -> Result<usize, i32> where Self: Sized;
 }
 
 pub struct Ext4BlockWrapper<K: KernelDevOp> {
     value: Box<ext4_blockdev>,
-    block_dev: Box<K::DevType>,
+    block_dev: K::DevType,
     name: [u8; 16],
     mount_point: [u8; 32],
-    //pd: core::marker::PhantomData<K>,
 }
 
 impl<K: KernelDevOp> Ext4BlockWrapper<K> {
-    fn new(block_dev: K::DevType) -> Self {
-        //let devt = &mut block_dev as *mut K::DevType as *mut core::ffi::c_void;
+    pub fn new(mut block_dev: K::DevType) -> Result<Self, i32> {
         //let devt = Box::into_raw(Box::new(block_dev)) as *mut c_void;
-        
-        let mut devt = Box::new(block_dev);
-        let devt_user = devt.as_mut() as *mut _ as *mut c_void;
+        //let devt_user = devt.as_mut() as *mut _ as *mut c_void;
+        let devt_user = &mut block_dev as *mut _ as *mut c_void;
 
         // Block size buffer
         let mut bbuf: Vec<u8> = Vec::with_capacity(EXT4_DEV_BSIZE as usize);
@@ -74,10 +76,12 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
 
         let mut ext4bd = Self {
             value: Box::new(ext4dev),
-            block_dev: devt,
+            block_dev,
             name,
             mount_point,
         };
+
+        info!("New an Ext4 Block Device");
 
         // ext4_blockdev into static instance
         // lwext4_mount
@@ -91,10 +95,11 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         ext4bd.print_lwext4_mp_stats();
         ext4bd.print_lwext4_block_stats();
 
-        ext4bd
+        Ok(ext4bd)
     }
     pub unsafe extern "C" fn dev_open(bdev: *mut ext4_blockdev) -> ::core::ffi::c_int {
-        let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
+        let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
+
         // DevType: Disk
         if (*(*bdev).bdif).p_user as usize == 0 {
             return EIO as _;
@@ -103,7 +108,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         // buffering at Disk
         // setbuf(dev_file, buffer);
 
-        let seek_off = K::seek(devt, 0, SEEK_END as i32);
+        let seek_off = K::seek(&mut devt, 0, SEEK_END as i32);
         let cur = match seek_off {
             Ok(v) => v,
             Err(e) => return EFAULT as _,
@@ -120,11 +125,11 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         blk_id: u64,
         blk_cnt: u32,
     ) -> ::core::ffi::c_int {
-        let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
+        let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
 
         let seek_off = K::seek(
-            devt,
-            blk_id * ((*(*bdev).bdif).ph_bsize as u64),
+            &mut devt,
+            (blk_id * ((*(*bdev).bdif).ph_bsize as u64)) as i64,
             SEEK_SET as i32,
         );
         match seek_off {
@@ -139,7 +144,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         let buf_len = ((*(*bdev).bdif).ph_bsize * blk_cnt * 1) as usize;
         let buffer = unsafe { from_raw_parts_mut(buf as *mut u8, buf_len) };
 
-        let read_cnt = K::read(devt, buffer);
+        let read_cnt = K::read(&mut devt, buffer);
         match read_cnt {
             Ok(v) => v,
             Err(e) => return EIO as _,
@@ -153,11 +158,14 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         blk_id: u64,
         blk_cnt: u32,
     ) -> ::core::ffi::c_int {
-        let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
+        //let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
+        //let devt = unsafe { K::DevType::borrow((*(*bdev).bdif).p_user) };
+        //let mut devt = unsafe { K::DevType::borrow_mut((*(*bdev).bdif).p_user) };
+        let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
 
         let seek_off = K::seek(
-            devt,
-            blk_id * ((*(*bdev).bdif).ph_bsize as u64),
+            &mut devt,
+            (blk_id * ((*(*bdev).bdif).ph_bsize as u64)) as i64,
             SEEK_SET as i32,
         );
         match seek_off {
@@ -171,7 +179,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
 
         let buf_len = ((*(*bdev).bdif).ph_bsize * blk_cnt * 1) as usize;
         let buffer = unsafe { from_raw_parts(buf as *const u8, buf_len) };
-        let write_cnt = K::write(devt, buffer);
+        let write_cnt = K::write(&mut devt, buffer);
         match write_cnt {
             Ok(v) => v,
             Err(e) => return EIO as _,
@@ -184,8 +192,6 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
     }
     pub unsafe extern "C" fn dev_close(bdev: *mut ext4_blockdev) -> ::core::ffi::c_int {
         //fclose(dev_file);
-
-        // umount
         EOK as _
     }
 
@@ -216,6 +222,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         ext4_cache_write_back(c_mountpoint, true);
         // ext4_bcache
 
+        info!("lwext4 mount Okay");
         Ok(0)
     }
 
@@ -246,6 +253,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
             }
         }
 
+        info!("lwext4 umount Okay");
         Ok(0)
     }
 

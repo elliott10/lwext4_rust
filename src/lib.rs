@@ -3,6 +3,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+#![feature(associated_type_defaults)]
+
 extern crate alloc;
 
 #[macro_use]
@@ -11,6 +13,7 @@ extern crate log;
 // include!("bindings.rs");
 pub mod bindings;
 pub mod blockdev;
+pub mod types;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
