@@ -1,37 +1,42 @@
 use crate::bindings::*;
-use crate::types::ForeignOwnable;
 use alloc::boxed::Box;
 use alloc::ffi::CString;
 use alloc::vec::Vec;
 use core::ffi::{c_char, c_void};
 use core::ptr::null_mut;
+use core::str;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
 
 /// Device block size.
 const EXT4_DEV_BSIZE: u32 = 512;
 
 pub trait KernelDevOp {
-    type DevType: ForeignOwnable + Sized + Send + Sync = ();
+    //type DevType: ForeignOwnable + Sized + Send + Sync = ();
+    type DevType;
 
-    fn read(dev: &mut Self::DevType, buf: &mut [u8]) -> Result<usize, i32> where Self: Sized;
-    fn write(dev: &mut Self::DevType, buf: &[u8]) -> Result<usize, i32> where Self: Sized;
     //fn write(dev: <Self::DevType as ForeignOwnable>::Borrowed<'_>, buf: &[u8]) -> Result<usize, i32>;
-    fn seek(dev: &mut Self::DevType, off: i64, whence: i32) -> Result<i64, i32> where Self: Sized;
-    fn flush(dev: &mut Self::DevType) -> Result<usize, i32> where Self: Sized;
+    fn write(dev: &mut Self::DevType, buf: &[u8]) -> Result<usize, i32>;
+    fn read(dev: &mut Self::DevType, buf: &mut [u8]) -> Result<usize, i32>;
+    fn seek(dev: &mut Self::DevType, off: i64, whence: i32) -> Result<i64, i32>;
+    fn flush(dev: &mut Self::DevType) -> Result<usize, i32>
+    where
+        Self: Sized;
 }
 
 pub struct Ext4BlockWrapper<K: KernelDevOp> {
     value: Box<ext4_blockdev>,
-    block_dev: K::DevType,
+    //block_dev: K::DevType,
     name: [u8; 16],
     mount_point: [u8; 32],
+    pd: core::marker::PhantomData<K>,
 }
 
 impl<K: KernelDevOp> Ext4BlockWrapper<K> {
     pub fn new(mut block_dev: K::DevType) -> Result<Self, i32> {
-        //let devt = Box::into_raw(Box::new(block_dev)) as *mut c_void;
+        // note this ownership
+        let devt_user = Box::into_raw(Box::new(block_dev)) as *mut c_void;
         //let devt_user = devt.as_mut() as *mut _ as *mut c_void;
-        let devt_user = &mut block_dev as *mut _ as *mut c_void;
+        //let devt_user = &mut block_dev as *mut _ as *mut c_void;
 
         // Block size buffer
         let mut bbuf: Vec<u8> = Vec::with_capacity(EXT4_DEV_BSIZE as usize);
@@ -76,9 +81,10 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
 
         let mut ext4bd = Self {
             value: Box::new(ext4dev),
-            block_dev,
+            //block_dev,
             name,
             mount_point,
+            pd: core::marker::PhantomData,
         };
 
         info!("New an Ext4 Block Device");
@@ -91,24 +97,26 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
                 .lwext4_mount()
                 .expect("Failed to mount the ext4 file system");
         }
-
+        ext4bd.lwext4_dir_ls();
         ext4bd.print_lwext4_mp_stats();
         ext4bd.print_lwext4_block_stats();
 
         Ok(ext4bd)
     }
     pub unsafe extern "C" fn dev_open(bdev: *mut ext4_blockdev) -> ::core::ffi::c_int {
-        let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
-
+        let p_user = (*(*bdev).bdif).p_user;
+        debug!("OPEN Ext4 block device p_user={:#x}", p_user as usize);
         // DevType: Disk
-        if (*(*bdev).bdif).p_user as usize == 0 {
+        if p_user as usize == 0 {
             return EIO as _;
         }
+        //let mut devt = Box::from_raw(p_user as *mut K::DevType);
+        let devt = unsafe { &mut *(p_user as *mut K::DevType) };
 
         // buffering at Disk
         // setbuf(dev_file, buffer);
 
-        let seek_off = K::seek(&mut devt, 0, SEEK_END as i32);
+        let seek_off = K::seek(devt, 0, SEEK_END as i32);
         let cur = match seek_off {
             Ok(v) => v,
             Err(e) => return EFAULT as _,
@@ -125,10 +133,11 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         blk_id: u64,
         blk_cnt: u32,
     ) -> ::core::ffi::c_int {
-        let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
+        debug!("READ Ext4 block id: {}, count: {}", blk_id, blk_cnt);
+        let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
 
         let seek_off = K::seek(
-            &mut devt,
+            devt,
             (blk_id * ((*(*bdev).bdif).ph_bsize as u64)) as i64,
             SEEK_SET as i32,
         );
@@ -144,7 +153,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         let buf_len = ((*(*bdev).bdif).ph_bsize * blk_cnt * 1) as usize;
         let buffer = unsafe { from_raw_parts_mut(buf as *mut u8, buf_len) };
 
-        let read_cnt = K::read(&mut devt, buffer);
+        let read_cnt = K::read(devt, buffer);
         match read_cnt {
             Ok(v) => v,
             Err(e) => return EIO as _,
@@ -158,13 +167,15 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         blk_id: u64,
         blk_cnt: u32,
     ) -> ::core::ffi::c_int {
-        //let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
-        //let devt = unsafe { K::DevType::borrow((*(*bdev).bdif).p_user) };
+        debug!("WRITE Ext4 block id: {}, count: {}", blk_id, blk_cnt);
+
+        let devt = unsafe { &mut *((*(*bdev).bdif).p_user as *mut K::DevType) };
         //let mut devt = unsafe { K::DevType::borrow_mut((*(*bdev).bdif).p_user) };
-        let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
+        //let mut devt = unsafe { K::DevType::from_foreign((*(*bdev).bdif).p_user) };
+        //let mut devt = Box::from_raw((*(*bdev).bdif).p_user as *mut K::DevType);
 
         let seek_off = K::seek(
-            &mut devt,
+            devt,
             (blk_id * ((*(*bdev).bdif).ph_bsize as u64)) as i64,
             SEEK_SET as i32,
         );
@@ -179,7 +190,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
 
         let buf_len = ((*(*bdev).bdif).ph_bsize * blk_cnt * 1) as usize;
         let buffer = unsafe { from_raw_parts(buf as *const u8, buf_len) };
-        let write_cnt = K::write(&mut devt, buffer);
+        let write_cnt = K::write(devt, buffer);
         match write_cnt {
             Ok(v) => v,
             Err(e) => return EIO as _,
@@ -191,6 +202,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         EOK as _
     }
     pub unsafe extern "C" fn dev_close(bdev: *mut ext4_blockdev) -> ::core::ffi::c_int {
+        debug!("CLOSE Ext4 block device");
         //fclose(dev_file);
         EOK as _
     }
@@ -257,6 +269,44 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         Ok(0)
     }
 
+    pub fn lwext4_dir_ls(&self) {
+        let path = &self.mount_point;
+        let mut sss: [u8; 255] = [0; 255];
+        let mut d: ext4_dir = unsafe { core::mem::zeroed() };
+
+        let entry_to_str = |entry_type| match entry_type {
+            EXT4_DE_UNKNOWN => "[unk] ",
+            EXT4_DE_REG_FILE => "[fil] ",
+            EXT4_DE_DIR => "[dir] ",
+            EXT4_DE_CHRDEV => "[cha] ",
+            EXT4_DE_BLKDEV => "[blk] ",
+            EXT4_DE_FIFO => "[fif] ",
+            EXT4_DE_SOCK => "[soc] ",
+            EXT4_DE_SYMLINK => "[sym] ",
+            _ => "[???] ",
+        };
+
+        info!("ls {}", str::from_utf8(path).unwrap());
+        unsafe {
+            ext4_dir_open(&mut d, path as *const _ as *const c_char);
+            let mut de = ext4_dir_entry_next(&mut d);
+            while !de.is_null() {
+                let dentry = &(*de);
+                sss.copy_from_slice(&dentry.name);
+                sss[dentry.name_length as usize] = 0;
+
+                info!(
+                    "  {}{}",
+                    entry_to_str(dentry.inode_type as u32),
+                    str::from_utf8(&sss).unwrap()
+                );
+                de = ext4_dir_entry_next(&mut d);
+            }
+            ext4_dir_close(&mut d);
+        }
+        info!("");
+    }
+
     pub fn print_lwext4_mp_stats(&self) {
         //struct ext4_mount_stats stats;
         let mut stats: ext4_mount_stats = unsafe { core::mem::zeroed() };
@@ -298,8 +348,15 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
             );
             info!("bcache->lru_ctr = {:?}", (*ext4dev.bc).lru_ctr);
         }
-        info!("\n");
-
         info!("********************\n");
+    }
+}
+
+impl<K: KernelDevOp> Drop for Ext4BlockWrapper<K> {
+    fn drop(&mut self) {
+        info!("Drop struct Ext4BlockWrapper");
+        self.lwext4_umount().unwrap();
+        let devtype = unsafe { Box::from_raw((*(&self.value).bdif).p_user as *mut K::DevType) };
+        drop(devtype);
     }
 }
