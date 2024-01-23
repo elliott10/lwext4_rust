@@ -4,8 +4,8 @@ use alloc::ffi::CString;
 use alloc::vec::Vec;
 use core::ffi::{c_char, c_void};
 use core::ptr::null_mut;
-use core::str;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
+use core::str;
 
 /// Device block size.
 const EXT4_DEV_BSIZE: u32 = 512;
@@ -71,7 +71,8 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
 
         let c_name = CString::new("ext4_fs").expect("CString::new ext4_fs failed");
         let c_name = c_name.as_bytes_with_nul(); // + '\0'
-        let c_mountpoint = CString::new("/mp/").unwrap();
+                                                 //let c_mountpoint = CString::new("/mp/").unwrap();
+        let c_mountpoint = CString::new("/").unwrap();
         let c_mountpoint = c_mountpoint.as_bytes_with_nul();
 
         let mut name: [u8; 16] = [0; 16];
@@ -97,6 +98,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
                 .lwext4_mount()
                 .expect("Failed to mount the ext4 file system");
         }
+
         ext4bd.lwext4_dir_ls();
         ext4bd.print_lwext4_mp_stats();
         ext4bd.print_lwext4_block_stats();
@@ -226,6 +228,14 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
             error!("ext4_recover: rc = {:?}\n", r);
             return Err(r);
         }
+
+        //  ext4_mount("sda1", "/");
+        //  ext4_journal_start("/");
+        //
+        // File operations here...
+        //
+        //  ext4_journal_stop("/");
+        //  ext4_umount("/");
         let r = ext4_journal_start(c_mountpoint);
         if r != EOK as i32 {
             error!("ext4_journal_start: rc = {:?}\n", r);

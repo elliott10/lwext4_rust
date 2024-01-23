@@ -13,7 +13,12 @@ extern crate log;
 // include!("bindings.rs");
 pub mod bindings;
 pub mod blockdev;
+
+pub mod file;
 pub mod types;
+
+pub use blockdev::*;
+pub use file::{Ext4File, InodeTypes};
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
