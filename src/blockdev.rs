@@ -1,7 +1,6 @@
 use crate::bindings::*;
 use alloc::boxed::Box;
 use alloc::ffi::CString;
-use alloc::vec::Vec;
 use core::ffi::{c_char, c_void};
 use core::ptr::null_mut;
 use core::slice::{from_raw_parts, from_raw_parts_mut};
@@ -39,7 +38,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         //let devt_user = &mut block_dev as *mut _ as *mut c_void;
 
         // Block size buffer
-        let mut bbuf: Vec<u8> = Vec::with_capacity(EXT4_DEV_BSIZE as usize);
+        let bbuf = Box::new([0u8; EXT4_DEV_BSIZE as usize]);
 
         let ext4bdif: ext4_blockdev_iface = ext4_blockdev_iface {
             open: Some(Self::dev_open),
@@ -50,18 +49,20 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
             unlock: None,
             ph_bsize: EXT4_DEV_BSIZE,
             ph_bcnt: 0,
-            ph_bbuf: bbuf.as_mut_ptr(),
+            ph_bbuf: Box::into_raw(bbuf) as *mut u8,
             ph_refctr: 0,
             bread_ctr: 0,
             bwrite_ctr: 0,
             p_user: devt_user,
         };
 
+        let bcbuf: Box<ext4_bcache>= Box::new(unsafe{core::mem::zeroed()});
+
         let ext4dev = ext4_blockdev {
             bdif: Box::into_raw(Box::new(ext4bdif)),
             part_offset: 0,
             part_size: 0 * EXT4_DEV_BSIZE as u64,
-            bc: null_mut(),
+            bc: Box::into_raw(bcbuf),
             lg_bsize: 0,
             lg_bcnt: 0,
             cache_write_back: 0,
