@@ -90,7 +90,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         };
 
         info!("New an Ext4 Block Device");
-        ext4.ext4_set_debug();
+        ext4bd.ext4_set_debug();
 
         // ext4_blockdev into static instance
         // lwext4_mount

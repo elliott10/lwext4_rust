@@ -1,26 +1,67 @@
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::env;
-use std::path::PathBuf;
+use std::{env, fs};
 
 fn main() {
-    let c_path = PathBuf::from("c/lwext4").canonicalize().expect("cannot canonicalize path");
     //let out_dir = env::var("OUT_DIR").unwrap();
+    let c_path = PathBuf::from("c/lwext4")
+        .canonicalize()
+        .expect("cannot canonicalize path");
+
+    let lwext4_make = Path::new("c/lwext4/toolchain/musl-generic.cmake");
+    let lwext4_patch = Path::new("c/lwext4-make.patch").canonicalize().unwrap();
+
+    if !Path::new(lwext4_make).exists() {
+        println!("Retrieve lwext4 source code");
+        let git_status = Command::new("git")
+            .args(&["submodule", "update", "--init", "--recursive"])
+            .status()
+            .expect("failed to execute process: git submodule");
+        assert!(git_status.success());
+
+        println!("To patch lwext4 src");
+        Command::new("git")
+            .args(&["apply", lwext4_patch.to_str().unwrap()])
+            .current_dir(c_path.clone())
+            .spawn()
+            .expect("failed to execute process: git apply patch");
+
+        fs::copy(
+            "c/musl-generic.cmake",
+            "c/lwext4/toolchain/musl-generic.cmake",
+        )
+        .unwrap();
+    }
+
     let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-    let status = Command::new("make").args(&["musl-generic", "-C", c_path.to_str().expect("invalid path of lwext4")])
-        .arg(&format!("ARCH={}", arch))
-        .status().expect("failed to execute process: make lwext4");
-    assert!(status.success());
+    let lwext4_lib = &format!("lwext4-{}", arch);
+    let lwext4_lib_path = &format!("c/lwext4/lib{}.a", lwext4_lib);
+    if !Path::new(lwext4_lib_path).exists() {
+        let status = Command::new("make")
+            .args(&[
+                "musl-generic",
+                "-C",
+                c_path.to_str().expect("invalid path of lwext4"),
+            ])
+            .arg(&format!("ARCH={}", arch))
+            .status()
+            .expect("failed to execute process: make lwext4");
+        assert!(status.success());
 
-    generates_bindings_to_rust();
+        generates_bindings_to_rust();
+    }
 
-    println!("cargo:rustc-link-lib=static=lwext4");
-    println!("cargo:rustc-link-search=native={}", c_path.to_str().unwrap());
+    println!("cargo:rustc-link-lib=static={lwext4_lib}");
+    println!(
+        "cargo:rustc-link-search=native={}",
+        c_path.to_str().unwrap()
+    );
     println!("cargo:rerun-if-changed=c/wrapper.h");
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());
 }
 
 fn generates_bindings_to_rust() {
-        let bindings = bindgen::Builder::default()
+    let bindings = bindgen::Builder::default()
         .use_core()
         // The input header we would like to generate bindings for.
         .header("c/wrapper.h")
@@ -35,9 +76,9 @@ fn generates_bindings_to_rust() {
         .generate()
         .expect("Unable to generate bindings");
 
-        // Write the bindings to the $OUT_DIR/bindings.rs file.
-        let out_path = PathBuf::from("src");
-        bindings
-            .write_to_file(out_path.join("bindings.rs"))
-            .expect("Couldn't write bindings!");
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let out_path = PathBuf::from("src");
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
 }
