@@ -1,0 +1,42 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index eec0993..c4a72e3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -43,6 +43,10 @@ else()
+       set(BLOCKDEV_TYPE  linux)
+     endif()
+     set (INSTALL_LIB 1)
++
++    #add_definitions(-DCONFIG_DEBUG_PRINTF=1)
++    add_definitions(-DCONFIG_DEBUG_PRINTF=0)
++
+     add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=0)
+     add_definitions(-DCONFIG_HAVE_OWN_ERRNO=0)
+     add_definitions(-DCONFIG_HAVE_OWN_ASSERT=0)
+diff --git a/Makefile b/Makefile
+index 12ee5c7..3ce4452 100644
+--- a/Makefile
++++ b/Makefile
+@@ -19,6 +19,8 @@ COMMON_DEFINITIONS =                                      \
+ 	-DVERSION_MINOR=$(VERSION_MINOR)                      \
+ 	-DVERSION_PATCH=$(VERSION_PATCH)                      \
+ 	-DVERSION=$(VERSION)                                  \
++	-DLWEXT4_BUILD_SHARED_LIB=OFF \
++	-DCMAKE_INSTALL_PREFIX=./install \
+ 
+ define generate_common
+ 	rm -R -f build_$(1)
+@@ -29,6 +31,13 @@ define generate_common
+ 	-DCMAKE_TOOLCHAIN_FILE=../toolchain/$(1).cmake ..
+ endef
+ 
++ARCH ?= x86_64
++#Output: src/liblwext4.a
++musl-generic:
++	$(call generate_common,$@)
++	cd build_$@ && make lwext4
++	cp build_$@/src/liblwext4.a ./liblwext4-$(ARCH).a
++
+ generic:
+ 	$(call generate_common,$@)
+ 
