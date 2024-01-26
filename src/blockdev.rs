@@ -56,7 +56,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
             p_user: devt_user,
         };
 
-        let bcbuf: Box<ext4_bcache>= Box::new(unsafe{core::mem::zeroed()});
+        let bcbuf: Box<ext4_bcache> = Box::new(unsafe { core::mem::zeroed() });
 
         let ext4dev = ext4_blockdev {
             bdif: Box::into_raw(Box::new(ext4bdif)),
@@ -90,6 +90,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         };
 
         info!("New an Ext4 Block Device");
+        ext4.ext4_set_debug();
 
         // ext4_blockdev into static instance
         // lwext4_mount
@@ -316,6 +317,12 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
             ext4_dir_close(&mut d);
         }
         info!("");
+    }
+
+    pub fn ext4_set_debug(&self) {
+        unsafe {
+            ext4_dmask_set(DEBUG_ALL);
+        }
     }
 
     pub fn print_lwext4_mp_stats(&self) {
