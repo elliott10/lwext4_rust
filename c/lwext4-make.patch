@@ -1,20 +1,19 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index eec0993..c4a72e3 100644
+index eec0993..d3c46cc 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -43,6 +43,10 @@ else()
+@@ -43,6 +43,9 @@ else()
        set(BLOCKDEV_TYPE  linux)
      endif()
      set (INSTALL_LIB 1)
 +
-+    #add_definitions(-DCONFIG_DEBUG_PRINTF=1)
-+    add_definitions(-DCONFIG_DEBUG_PRINTF=0)
++    add_definitions(-DCONFIG_DEBUG_PRINTF=1)
 +
      add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=0)
      add_definitions(-DCONFIG_HAVE_OWN_ERRNO=0)
      add_definitions(-DCONFIG_HAVE_OWN_ASSERT=0)
 diff --git a/Makefile b/Makefile
-index 12ee5c7..3ce4452 100644
+index 12ee5c7..b68e850 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -19,6 +19,8 @@ COMMON_DEFINITIONS =                                      \

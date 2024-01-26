@@ -124,10 +124,10 @@ impl Ext4File {
             drop(CString::from_raw(c_path));
         }
         if r == EOK as i32 {
-            info!("{:?} {} Exist", mtype, path);
+            debug!("{:?} {} Exist", mtype, path);
             true //Exist
         } else {
-            warn!("{:?} {} No Exist. ext4_inode_exist rc = {}", mtype, path, r);
+            debug!("{:?} {} No Exist. ext4_inode_exist rc = {}", mtype, path, r);
             false
         }
     }
@@ -180,11 +180,11 @@ impl Ext4File {
     pub fn file_read(&mut self, buff: &mut [u8]) -> Result<usize, i32> {
         let mut rw_count = 0;
 
-        //let len = buff.len();
         const len: usize = 512;
         let mbox = Box::new([0 as u8; len]);
         let mbox_ptr = Box::into_raw(mbox) as *mut core::ffi::c_void;
         let r = unsafe { ext4_fread(&mut self.file_desc, mbox_ptr, len, &mut rw_count) };
+
         let mbox = unsafe { Box::from_raw(mbox_ptr as *mut [u8; len]) };
         if r != EOK as i32 {
             error!("ext4_fread: rc = {}", r);
@@ -198,39 +198,6 @@ impl Ext4File {
         Ok(rw_count)
     }
 
-    pub fn file_read_test(&mut self, path: &str, buff: &mut [u8]) -> Result<usize, i32> {
-        let c_path = CString::new(path).unwrap();
-        let c_path = c_path.into_raw();
-        let flags = CString::new("r+").unwrap();
-        let flags = flags.into_raw();
-
-        let mut fd: ext4_file = unsafe { core::mem::zeroed() };
-
-        let r = unsafe { ext4_fopen(&mut fd, c_path, flags) };
-        unsafe {
-            // deallocate the CString
-            drop(CString::from_raw(c_path));
-            drop(CString::from_raw(flags));
-        }
-        if r != EOK as i32 {
-            error!("ext4_fopen: rc = {}", r);
-            //return Err(r);
-        }
-        info!("To read test");
-        let mut rw_count = 0;
-        let r = unsafe { ext4_fread(&mut fd, buff.as_mut_ptr() as _, buff.len(), &mut rw_count) };
-
-        if r != EOK as i32 {
-            error!("ext4_fread: rc = {}", r);
-            //return Err(r);
-        }
-        unsafe {
-            ext4_fclose(&mut fd);
-        }
-        info!("ext4_fread len={}", rw_count);
-
-        Ok(rw_count)
-    }
     /*
     pub fn file_close(&mut self, path: &str) -> Result<usize, i32> {
         let cstr_path = CString::new(path).unwrap();
@@ -432,8 +399,7 @@ impl Ext4File {
                     dentry.inode_type,
                     core::str::from_utf8(&sss).unwrap()
                 );
-                /*
-                let mut dname: Vec<u8> =
+                /*   let mut dname: Vec<u8> =
                     Vec::from_raw_parts(&mut dentry.name as *mut u8, len, len + 1);
                 dname.push(0);
                 */
