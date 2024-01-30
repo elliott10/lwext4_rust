@@ -922,8 +922,10 @@ struct ext4_lock {
 
 
 #### 块设备模块
-   ext4_blockdev.h
 
+   块设备的操作接口函数主要定义在`ext4_blockdev.h`
+
+<!--
 ```
 struct ext4_blockdev_iface {
 	/**@brief   Open device function
@@ -1036,6 +1038,7 @@ struct ext4_blockdev {
 	}
 ```
 
+-->
 
 - `int ext4_block_init(struct ext4_blockdev *bdev);`
 
