@@ -70,7 +70,7 @@ impl Ext4File {
             drop(CString::from_raw(flags));
         }
         if r != EOK as i32 {
-            error!("ext4_fopen: rc = {}", r);
+            error!("ext4_fopen: {}, rc = {}", path, r);
             return Err(r);
         }
         //self.file_desc_map.insert(to_map, fd); // store c_path
@@ -81,6 +81,7 @@ impl Ext4File {
     pub fn file_close(&mut self) -> Result<usize, i32> {
         if self.file_desc.mp != core::ptr::null_mut() {
             debug!("file_close {:?}", self.get_path());
+            // self.file_cache_flush()?;
             unsafe {
                 ext4_fclose(&mut self.file_desc);
             }
@@ -169,6 +170,14 @@ impl Ext4File {
     }
 
     pub fn file_seek(&mut self, offset: i64, seek_type: u32) -> Result<usize, i32> {
+        let mut offset = offset;
+        let size = self.file_size() as i64;
+
+        if offset > size {
+            warn!("Seek beyond the end of the file");
+            offset = size;
+        }
+
         let r = unsafe { ext4_fseek(&mut self.file_desc, offset, seek_type) };
         if r != EOK as i32 {
             error!("ext4_fseek: rc = {}", r);
@@ -181,7 +190,7 @@ impl Ext4File {
         let mut rw_count = 0;
 
         const len: usize = 512;
-        let mbox = Box::new([0 as u8; len]);
+        let mut mbox = Box::new([0 as u8; len]);
         let mbox_ptr = Box::into_raw(mbox) as *mut core::ffi::c_void;
         let r = unsafe { ext4_fread(&mut self.file_desc, mbox_ptr, len, &mut rw_count) };
 
@@ -194,7 +203,7 @@ impl Ext4File {
         let rw_count = min(rw_count, buff.len());
         buff[..rw_count].copy_from_slice(&mbox[..rw_count]);
 
-        info!("file_read len={}", rw_count);
+        info!("file_read {:?}, len={}", self.get_path(), rw_count);
         Ok(rw_count)
     }
 
@@ -218,21 +227,28 @@ impl Ext4File {
         //let path = self.file_path.clone();
         //self.file_open(path.to_str().unwrap(), O_RDWR)?;
 
+        const len: usize = 512;
+        let mut mbox = Box::new([0 as u8; len]);
+
+        let len_var = min(len, buf.len());
+        mbox[..len_var].copy_from_slice(&buf[..len_var]);
+
+        let mbox_ptr = Box::into_raw(mbox) as *mut core::ffi::c_void;
+
         let mut rw_count = 0;
         let r = unsafe {
-            ext4_fwrite(
-                &mut self.file_desc,
-                buf.as_ptr() as _,
-                buf.len(),
-                &mut rw_count,
-            )
+            // ext4_fwrite( &mut self.file_desc, buf.as_ptr() as _, buf.len(), &mut rw_count )
+            ext4_fwrite(&mut self.file_desc, mbox_ptr, len_var, &mut rw_count)
         };
+        unsafe {
+            drop(Box::from_raw(mbox_ptr as *mut [u8; len]));
+        }
         //self.file_close()?;
         if r != EOK as i32 {
             error!("ext4_fwrite: rc = {}", r);
             return Err(r);
         }
-        info!("file_write len={}", rw_count);
+        info!("file_write {:?}, len={}", self.get_path(), rw_count);
         Ok(rw_count)
     }
 
@@ -247,7 +263,22 @@ impl Ext4File {
     }
 
     pub fn file_size(&mut self) -> u64 {
+        //注，记得先 O_RDONLY 打开文件
         unsafe { ext4_fsize(&mut self.file_desc) }
+    }
+
+    pub fn file_cache_flush(&mut self) -> Result<usize, i32> {
+        let c_path = self.file_path.clone();
+        let c_path = c_path.into_raw();
+        unsafe {
+            let r = ext4_cache_flush(c_path);
+            if r != EOK as i32 {
+                error!("ext4_cache_flush: rc = {}", r);
+                return Err(r);
+            }
+            drop(CString::from_raw(c_path));
+        }
+        Ok(0)
     }
 
     pub fn file_mode_get(&mut self) -> Result<u32, i32> {
@@ -263,7 +294,7 @@ impl Ext4File {
             error!("ext4_mode_get: rc = {}", r);
             return Err(r);
         }
-        info!("Got file mode={:#x}", mode);
+        debug!("Got file mode={:#x}", mode);
         Ok(mode)
     }
 
@@ -305,7 +336,7 @@ impl Ext4File {
                 InodeTypes::EXT4_INODE_MODE_FILE
             }
         };
-        info!("Inode mode types: {:?}", itypes);
+        debug!("Inode mode types: {:?}", itypes);
 
         itypes
     }
