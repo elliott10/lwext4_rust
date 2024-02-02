@@ -11,6 +11,7 @@ _lwext4 is an ext2/ext3/ext4 filesystem library in C for microcontrollers_
 * memory as block cache
 
 ## Quick start
+please define env: `LIBC_BUILD_TARGET_DIR`
 ```
 cargo build -vv --target <x86_64-unknown-none | riscv64gc-unknown-none-elf>
 ```

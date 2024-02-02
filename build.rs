@@ -3,7 +3,6 @@ use std::process::Command;
 use std::{env, fs};
 
 fn main() {
-    //let out_dir = env::var("OUT_DIR").unwrap();
     let c_path = PathBuf::from("c/lwext4")
         .canonicalize()
         .expect("cannot canonicalize path");
@@ -51,11 +50,16 @@ fn main() {
         generates_bindings_to_rust();
     }
 
+    let libc_dir = env::var("LIBC_BUILD_TARGET_DIR").unwrap_or(String::from("./"));
+
     println!("cargo:rustc-link-lib=static={lwext4_lib}");
+    println!("cargo:rustc-link-lib=static=c");
+
     println!(
         "cargo:rustc-link-search=native={}",
         c_path.to_str().unwrap()
     );
+    println!("cargo:rustc-link-search=native={}", libc_dir);
     println!("cargo:rerun-if-changed=c/wrapper.h");
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());
 }
@@ -66,7 +70,7 @@ fn generates_bindings_to_rust() {
         // The input header we would like to generate bindings for.
         .header("c/wrapper.h")
         //.clang_arg("--sysroot=/path/to/sysroot")
-        .clang_arg("-I../../ulib/axlibc/include")
+        //.clang_arg("-I../../ulib/axlibc/include")
         .clang_arg("-I./c/lwext4/include")
         .clang_arg("-I./c/lwext4/build_musl-generic/include/")
         .layout_tests(false)

@@ -188,22 +188,22 @@ impl Ext4File {
 
     pub fn file_read(&mut self, buff: &mut [u8]) -> Result<usize, i32> {
         let mut rw_count = 0;
+        let r = unsafe {
+            ext4_fread(
+                &mut self.file_desc,
+                buff.as_mut_ptr() as _,
+                buff.len(),
+                &mut rw_count,
+            )
+        };
 
-        const len: usize = 512;
-        let mut mbox = Box::new([0 as u8; len]);
-        let mbox_ptr = Box::into_raw(mbox) as *mut core::ffi::c_void;
-        let r = unsafe { ext4_fread(&mut self.file_desc, mbox_ptr, len, &mut rw_count) };
-
-        let mbox = unsafe { Box::from_raw(mbox_ptr as *mut [u8; len]) };
         if r != EOK as i32 {
             error!("ext4_fread: rc = {}", r);
             return Err(r);
         }
 
-        let rw_count = min(rw_count, buff.len());
-        buff[..rw_count].copy_from_slice(&mbox[..rw_count]);
-
         info!("file_read {:?}, len={}", self.get_path(), rw_count);
+
         Ok(rw_count)
     }
 
@@ -223,27 +223,16 @@ impl Ext4File {
     */
 
     pub fn file_write(&mut self, buf: &[u8]) -> Result<usize, i32> {
-        // if self.file_desc.mp == core::ptr::null_mut()
-        //let path = self.file_path.clone();
-        //self.file_open(path.to_str().unwrap(), O_RDWR)?;
-
-        const len: usize = 512;
-        let mut mbox = Box::new([0 as u8; len]);
-
-        let len_var = min(len, buf.len());
-        mbox[..len_var].copy_from_slice(&buf[..len_var]);
-
-        let mbox_ptr = Box::into_raw(mbox) as *mut core::ffi::c_void;
-
         let mut rw_count = 0;
         let r = unsafe {
-            // ext4_fwrite( &mut self.file_desc, buf.as_ptr() as _, buf.len(), &mut rw_count )
-            ext4_fwrite(&mut self.file_desc, mbox_ptr, len_var, &mut rw_count)
+            ext4_fwrite(
+                &mut self.file_desc,
+                buf.as_ptr() as _,
+                buf.len(),
+                &mut rw_count,
+            )
         };
-        unsafe {
-            drop(Box::from_raw(mbox_ptr as *mut [u8; len]));
-        }
-        //self.file_close()?;
+
         if r != EOK as i32 {
             error!("ext4_fwrite: rc = {}", r);
             return Err(r);
