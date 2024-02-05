@@ -31,7 +31,7 @@ pub struct Ext4BlockWrapper<K: KernelDevOp> {
 }
 
 impl<K: KernelDevOp> Ext4BlockWrapper<K> {
-    pub fn new(mut block_dev: K::DevType) -> Result<Self, i32> {
+    pub fn new(block_dev: K::DevType) -> Result<Self, i32> {
         // note this ownership
         let devt_user = Box::into_raw(Box::new(block_dev)) as *mut c_void;
         //let devt_user = devt.as_mut() as *mut _ as *mut c_void;
@@ -123,7 +123,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         let seek_off = K::seek(devt, 0, SEEK_END as i32);
         let cur = match seek_off {
             Ok(v) => v,
-            Err(e) => return EFAULT as _,
+            Err(_e) => return EFAULT as _,
         };
 
         (*bdev).part_offset = 0;
@@ -147,7 +147,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         );
         match seek_off {
             Ok(v) => v,
-            Err(e) => return EIO as _,
+            Err(_e) => return EIO as _,
         };
 
         if blk_cnt == 0 {
@@ -160,7 +160,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         let read_cnt = K::read(devt, buffer);
         match read_cnt {
             Ok(v) => v,
-            Err(e) => return EIO as _,
+            Err(_e) => return EIO as _,
         };
 
         EOK as _
@@ -185,7 +185,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         );
         match seek_off {
             Ok(v) => v,
-            Err(e) => return EIO as _,
+            Err(_e) => return EIO as _,
         };
 
         if blk_cnt == 0 {
@@ -197,7 +197,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         let write_cnt = K::write(devt, buffer);
         match write_cnt {
             Ok(v) => v,
-            Err(e) => return EIO as _,
+            Err(_e) => return EIO as _,
         };
 
         // drop_cache();
@@ -205,7 +205,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
 
         EOK as _
     }
-    pub unsafe extern "C" fn dev_close(bdev: *mut ext4_blockdev) -> ::core::ffi::c_int {
+    pub unsafe extern "C" fn dev_close(_bdev: *mut ext4_blockdev) -> ::core::ffi::c_int {
         debug!("CLOSE Ext4 block device");
         //fclose(dev_file);
         EOK as _

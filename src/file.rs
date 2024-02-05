@@ -1,6 +1,5 @@
 use crate::bindings::*;
-use alloc::{boxed::Box, ffi::CString, string::String, vec::Vec};
-use core::{cmp::min, ffi::CStr};
+use alloc::{ffi::CString, vec::Vec};
 
 // Ext4File文件操作与block device设备解耦了
 pub struct Ext4File {
@@ -137,7 +136,7 @@ impl Ext4File {
     pub fn file_rename(&mut self, path: &str, new_path: &str) -> Result<usize, i32> {
         let c_path = CString::new(path).expect("CString::new failed");
         let c_path = c_path.into_raw();
-        let c_new_path = CString::new(path).expect("CString::new failed");
+        let c_new_path = CString::new(new_path).expect("CString::new failed");
         let c_new_path = c_new_path.into_raw();
         let r = unsafe { ext4_frename(c_path, c_new_path) };
         unsafe {
