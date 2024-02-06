@@ -50,13 +50,14 @@ fn main() {
         generates_bindings_to_rust();
     }
 
+    let libc_name = &format!("c-{}", arch);
     let libc_dir = env::var("LIBC_BUILD_TARGET_DIR").unwrap_or(String::from("./"));
     let libc_dir = PathBuf::from(libc_dir)
         .canonicalize()
         .expect("cannot canonicalize LIBC_BUILD_TARGET_DIR");
 
     println!("cargo:rustc-link-lib=static={lwext4_lib}");
-    println!("cargo:rustc-link-lib=static=c");
+    println!("cargo:rustc-link-lib=static={libc_name}");
 
     println!(
         "cargo:rustc-link-search=native={}",
@@ -81,7 +82,7 @@ fn generates_bindings_to_rust() {
         .clang_arg("-I./c/lwext4/build_musl-generic/include/")
         .layout_tests(false)
         // Tell cargo to invalidate the built crate whenever any of the included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         // Finish the builder and generate the bindings.
         .generate()
         .expect("Unable to generate bindings");
