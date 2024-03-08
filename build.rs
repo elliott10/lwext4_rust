@@ -47,7 +47,16 @@ fn main() {
             .expect("failed to execute process: make lwext4");
         assert!(status.success());
 
-        generates_bindings_to_rust();
+        let cc = &format!("{}-linux-musl-gcc", arch);
+        let output = Command::new(cc)
+            .args(["-print-sysroot"])
+            .output()
+            .expect("failed to execute process: gcc -print-sysroot");
+
+        let sysroot = core::str::from_utf8(&output.stdout).unwrap();
+        let sysroot = sysroot.trim_end();
+        let sysroot_inc = &format!("-I{}/include/", sysroot);
+        generates_bindings_to_rust(sysroot_inc);
     }
 
     let libc_name = &format!("c-{}", arch);
@@ -71,18 +80,19 @@ fn main() {
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());
 }
 
-fn generates_bindings_to_rust() {
+fn generates_bindings_to_rust(mpath: &str) {
     let bindings = bindgen::Builder::default()
         .use_core()
         // The input header we would like to generate bindings for.
         .header("c/wrapper.h")
         //.clang_arg("--sysroot=/path/to/sysroot")
+        .clang_arg(mpath)
         //.clang_arg("-I../../ulib/axlibc/include")
         .clang_arg("-I./c/lwext4/include")
         .clang_arg("-I./c/lwext4/build_musl-generic/include/")
         .layout_tests(false)
         // Tell cargo to invalidate the built crate whenever any of the included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         // Finish the builder and generate the bindings.
         .generate()
         .expect("Unable to generate bindings");

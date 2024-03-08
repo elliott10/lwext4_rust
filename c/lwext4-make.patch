@@ -2,7 +2,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index eec0993..d1123c1 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -43,9 +43,11 @@ else()
+@@ -43,9 +43,12 @@ else()
        set(BLOCKDEV_TYPE  linux)
      endif()
      set (INSTALL_LIB 1)
@@ -11,6 +11,7 @@ index eec0993..d1123c1 100644
 -    add_definitions(-DCONFIG_HAVE_OWN_ASSERT=0)
 +
 +    add_definitions(-DCONFIG_DEBUG_PRINTF=1)
++    add_definitions(-DCONFIG_DEBUG_ASSERT=1)
 +    add_definitions(-DCONFIG_HAVE_OWN_OFLAGS=1)
 +    add_definitions(-DCONFIG_HAVE_OWN_ERRNO=1)
 +    add_definitions(-DCONFIG_HAVE_OWN_ASSERT=1)
