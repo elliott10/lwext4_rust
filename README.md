@@ -56,7 +56,7 @@ In order for `lwext4_rust` to find and link `libc.a` library correctly.
 ### Compile lwext4_rust separately
 
 ``` sh
-cargo build -vv --target <x86_64-unknown-none | riscv64gc-unknown-none-elf>
+cargo build -vv --target x86_64-unknown-none | riscv64gc-unknown-none-elf | aarch64-unknown-none-softfloat
 ```
 OR If you need to compile the lwext4 in C separately, 
 
@@ -66,8 +66,9 @@ please run `make musl-generic -C c/lwext4 ARCH=<x86_64|riscv64|aarch64>`
 * only C library on Rust OS
 * Rust development environment
 * C musl-based cross compile toolchains
-  
-eg: `x86_64-linux-musl-gcc`, or `riscv64-linux-musl-gcc`, or `aarch64-linux-musl-gcc`
+	- [x86_64-linux-musl-gcc](https://musl.cc/x86_64-linux-musl-cross.tgz)
+	- [riscv64-linux-musl-gcc](https://musl.cc/riscv64-linux-musl-cross.tgz)
+	- [aarch64-linux-musl-gcc](https://musl.cc/aarch64-linux-musl-cross.tgz)
 
 ## Reference
 
