@@ -1,6 +1,6 @@
 # Metis/RefFS Fuzzing工具
 
-## 编译安装Metis和RefFS
+## 编译安装[Metis](https://github.com/sbu-fsl/Metis)和[RefFS](https://www.usenix.org/system/files/fast24_slides-liu_yifei.pdf)
 
 需要先在Github上设置好ssh key，方便脚本的自动同步代码。具体设置方法是把本机的`~/.ssh/id_rsa.pub`公钥中的内容，复制到Github的`https://github.com/settings/ssh/new`中，以添加一个新的ssh key.
 
@@ -78,10 +78,12 @@ sudo make clean
 ![check ext2](output-ext2-check.png)
 
 ## RefFS - 通过对比RefFS以验证Ext4 
-创建一个新的`RefFS`作为`Metis`的参考文件系统
+创建一个新的[RefFS](https://github.com/sbu-fsl/RefFS)作为`Metis`的参考文件系统
 
 运行RefFS与Ext4的对比检查：
 ```
+# sudo mount -t fuse.fuse-cpp-ramfs verifs2 /mnt/test-verifs2
+
 cd ~/Metis/fs-state/mcfs_scripts/
 sudo ./single_verifs2.sh
 
@@ -91,6 +93,16 @@ sudo ./single_verifs2.sh
 请检查fs-state目录下的日志log。
 
 检查文件`error-pan*.log`，看是否找到bug
+
+### 检查自定义文件系统
+
+当测试其他文件系统。需要修改安装脚本 (setup.sh)、配置标头 (config.h) 和模型检查器代码 (mcfs-main.pml)，以便让模型检查器测试其他文件系统。 
+见： https://github.com/sbu-fsl/Metis/tree/master/fs-state#testing-other-file-systems
+
+为了加速文件系统操作，文件系统检查，使用 RAM 块设备作为要测试的文件系统的后端存储。 RAM 块设备甚至比 tmpfs 中的文件快得多。
+
+对于ext2、ext4文件系统，请将大小设置为256KB。您至少需要 2MB 才能启用 ext3 或 ext4 中的journaling 日记功能。
+
 
 ## 使用Metis重放
 
