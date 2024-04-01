@@ -19,7 +19,7 @@ set(OBJCOPY             ${TOOLCHAIN_PREFIX}-objcopy)
 set(OBJDUMP             ${TOOLCHAIN_PREFIX}-objdump)
 set(SIZE                ${TOOLCHAIN_PREFIX}-size)
 
-set(LD_FLAGS "-nolibc -nostdlib -static -no-pie --gc-sections -nostartfiles")
+set(LD_FLAGS "-nolibc -nostdlib -static --gc-sections -nostartfiles")
 
 set(CMAKE_C_FLAGS   "-std=gnu99 -fdata-sections -ffunction-sections" CACHE INTERNAL "c compiler flags")
 set(CMAKE_CXX_FLAGS "-fdata-sections -ffunction-sections" CACHE INTERNAL "cxx compiler flags")
@@ -27,8 +27,8 @@ set(CMAKE_ASM_FLAGS "" CACHE INTERNAL "asm compiler flags")
 
 # set(CMAKE_PASS_LIB_FLAGS " -I/home/os/rust/arceos/ulib/axlibc/include ")
 # set(CMAKE_C_FLAGS "-nostdinc -fno-builtin -ffreestanding ${CMAKE_PASS_LIB_FLAGS} ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-fno-builtin -ffreestanding ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-nostdinc -fno-builtin -ffreestanding ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS "-fPIC -fno-builtin -ffreestanding ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-fPIC -nostdinc -fno-builtin -ffreestanding ${CMAKE_CXX_FLAGS}")
 
 if (APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "-dead_strip" CACHE INTERNAL "exe link flags")
