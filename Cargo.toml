@@ -1,7 +1,7 @@
 [package]
 name = "lwext4_rust"
 authors = ["Luoyuan Xiao <xiaoluoyuan@163.com>"]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2018"
 license = "GPL-2.0"
 repository = "https://github.com/elliott10/lwext4_rust"
@@ -17,4 +17,4 @@ bindgen = "0.69"
 
 [dependencies]
 log = "0.4"
-
+printf-compat = { version = "0.1", default-features = false}

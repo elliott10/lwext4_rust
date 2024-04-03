@@ -201,7 +201,7 @@ impl Ext4File {
             return Err(r);
         }
 
-        info!("file_read {:?}, len={}", self.get_path(), rw_count);
+        debug!("file_read {:?}, len={}", self.get_path(), rw_count);
 
         Ok(rw_count)
     }
@@ -236,7 +236,7 @@ impl Ext4File {
             error!("ext4_fwrite: rc = {}", r);
             return Err(r);
         }
-        info!("file_write {:?}, len={}", self.get_path(), rw_count);
+        debug!("file_write {:?}, len={}", self.get_path(), rw_count);
         Ok(rw_count)
     }
 

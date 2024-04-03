@@ -59,22 +59,24 @@ fn main() {
         generates_bindings_to_rust(sysroot_inc);
     }
 
+    /* No longer need to implement the libc.a
     let libc_name = &format!("c-{}", arch);
     let libc_dir = env::var("LIBC_BUILD_TARGET_DIR").unwrap_or(String::from("./"));
     let libc_dir = PathBuf::from(libc_dir)
         .canonicalize()
         .expect("cannot canonicalize LIBC_BUILD_TARGET_DIR");
 
-    println!("cargo:rustc-link-lib=static={lwext4_lib}");
     println!("cargo:rustc-link-lib=static={libc_name}");
-
-    println!(
-        "cargo:rustc-link-search=native={}",
-        c_path.to_str().unwrap()
-    );
     println!(
         "cargo:rustc-link-search=native={}",
         libc_dir.to_str().unwrap()
+    );
+    */
+
+    println!("cargo:rustc-link-lib=static={lwext4_lib}");
+    println!(
+        "cargo:rustc-link-search=native={}",
+        c_path.to_str().unwrap()
     );
     println!("cargo:rerun-if-changed=c/wrapper.h");
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());

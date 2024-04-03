@@ -3,12 +3,15 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+#![feature(c_variadic, c_size_t)]
 #![feature(associated_type_defaults)]
 
 extern crate alloc;
 
 #[macro_use]
 extern crate log;
+
+mod ulibc;
 
 // include!("bindings.rs");
 pub mod bindings;
