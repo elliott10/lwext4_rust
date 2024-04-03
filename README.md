@@ -43,17 +43,7 @@ Ext4BlockWrapper::<Disk>::new(disk).expect("failed to initialize EXT4 filesystem
 ```
 
 ### Linking libc
-* Please implement `libc` library in Rust OS kernel.
-lwext4 in C depends on the library `libc`.
-
-* Or implement lwext4 call functions to libc, 
-like
-```
-printf, free, strncmp, stdout, fflush, malloc, calloc, strcmp, qsort, strcpy
-```
-
-* Please define the directory of `libc.a` in `LIBC_BUILD_TARGET_DIR` environment variable.
-In order for `lwext4_rust` to find and link `libc.a` library correctly.
+* _No longer need to implement the libc.a_
 
 ### Compile lwext4_rust separately
 
