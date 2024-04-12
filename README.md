@@ -12,6 +12,7 @@ _lwext4 is an ext2/ext3/ext4 filesystem library in C for microcontrollers_
 * memory as Block Cache
 
 ## Quick start on Rust OS
+![rust on arceos/starry](doc/pic/image.png)
 
 ### Wrap up the file operations
 Wrap up the file operation struct `Ext4File`.
