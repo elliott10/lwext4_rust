@@ -18,7 +18,9 @@ jobs:
       with:
         profile: minimal
         toolchain: ${{ matrix.rust-toolchain }}
+        override: true
         components: rust-src
+        target: riscv64gc-unknown-none-elf
     - uses: actions-rs/install@v0.1
       with:
         crate: cargo-binutils
@@ -29,4 +31,5 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
     - name: Build ${{ github.repository }}
-      run: cargo build -vv --target riscv64gc-unknown-none-elf
+      run: |
+        cargo build -vv --target riscv64gc-unknown-none-elf

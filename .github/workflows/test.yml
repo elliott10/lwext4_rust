@@ -33,7 +33,7 @@ jobs:
     - uses: ./.github/workflows/actions/setup-musl
       with:
         arch: ${{ matrix.arch }}
-    - name: Run app tests
+    - name: Run examples
       run: |
         cd examples
         make run
