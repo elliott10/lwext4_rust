@@ -13,7 +13,7 @@ links = "lwext4"
 build = "build.rs"
 
 [features]
-default = []
+default = ["print"]
 print = ["printf-compat"]
 
 [dependencies]
