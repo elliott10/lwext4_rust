@@ -101,6 +101,7 @@ impl Ext4File {
                 "r+"
             }
         };
+        debug!("flags_to_cstring: {}", cstr);
         CString::new(cstr).expect("CString::new OpenFlags failed")
     }
 

@@ -6,7 +6,7 @@ use crate::vfs_ops::{VfsNodeOps, VfsOps};
 use alloc::sync::Arc;
 use log::*;
 use lwext4_rust::bindings::{
-    O_CREAT, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY, SEEK_CUR, SEEK_END, SEEK_SET,
+    O_APPEND, O_CREAT, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY, SEEK_CUR, SEEK_END, SEEK_SET,
 };
 use lwext4_rust::{Ext4BlockWrapper, Ext4File, InodeTypes, KernelDevOp};
 use virtio_drivers::transport::Transport;
@@ -93,10 +93,6 @@ impl FileWrapper {
 
 /// The [`VfsNodeOps`] trait provides operations on a file or a directory.
 impl VfsNodeOps for FileWrapper {
-    #[inline]
-    fn as_any(&self) -> &dyn core::any::Any {
-        self
-    }
 
     /*
     fn get_attr(&self) -> Result<usize, i32> {
@@ -281,7 +277,8 @@ impl VfsNodeOps for FileWrapper {
         let mut file = self.0.borrow_mut();
         let path = file.get_path();
         let path = path.to_str().unwrap();
-        file.file_open(path, O_RDWR)?;
+        //file.file_open(path, O_RDWR)?;
+        file.file_open(path, O_RDWR | O_CREAT | O_APPEND)?;
 
         file.file_seek(offset as i64, SEEK_SET)?;
         let r = file.file_write(buf);

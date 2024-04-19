@@ -148,18 +148,6 @@ fn virtio_blk<T: Transport>(transport: T) {
 
     init_rootfs(blk);
 
-    /*
-    let mut input = vec![0xffu8; 512];
-    let mut output = vec![0; 512];
-    for i in 0..32 {
-        for x in input.iter_mut() {
-            *x = i as u8;
-        }
-        blk.write_blocks(i, &input).expect("failed to write");
-        blk.read_blocks(i, &mut output).expect("failed to read");
-        assert_eq!(input, output);
-    }
-    */
     info!("virtio-blk test finished");
 }
 
@@ -167,23 +155,24 @@ pub fn init_rootfs<T: Transport>(dev: VirtIOBlk<HalImpl, T>) {
     let disk = Disk::new(dev);
     let ext4_fs: Box<dyn VfsOps> = Box::new(Ext4FileSystem::new(disk));
     let root = ext4_fs.root_dir();
-/*
-    let mut write_buf: [u8; 20] = [b'H'; 20];
-    let mut read_buf: [u8; 20] = [0; 20];
 
     let new_file = "/ext4_test.txt";
-    let mut new_fd: Box<dyn VfsNodeOps> = Box::new(FileWrapper::new(new_file, InodeTypes::EXT4_INODE_MODE_FILE));
-    //let new_fd = root;
-    //new_fd.create(new_file, InodeTypes::EXT4_INODE_MODE_FILE);
-   
+    root.create(new_file, InodeTypes::EXT4_DE_REG_FILE);
+
+    let mut new_fd: Box<dyn VfsNodeOps> =
+        Box::new(FileWrapper::new(new_file, InodeTypes::EXT4_INODE_MODE_FILE));
+
+    let mut write_buf: [u8; 20] = [0xFFu8; 20];
+    let mut read_buf: [u8; 20] = [0; 20];
+
     new_fd.write_at(0, &write_buf);
-    
+
     new_fd.read_at(0, &mut read_buf);
 
-    //new_fd.remove(new_file);
+    root.remove(new_file);
 
+    println!("read file = {:#x?}", read_buf);
     assert_eq!(write_buf, read_buf);
-*/
 
     drop(ext4_fs);
 }
