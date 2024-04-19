@@ -12,9 +12,14 @@ description = "lwext4 in Rust"
 links = "lwext4"
 build = "build.rs"
 
-[build-dependencies]
-bindgen = "0.69"
+[features]
+default = []
+print = ["printf-compat"]
 
 [dependencies]
 log = "0.4"
-printf-compat = { version = "0.1", default-features = false}
+printf-compat = { version = "0.1", default-features = false, optional = true }
+
+#[build-dependencies]
+#[target.'cfg(unix)'.build-dependencies]
+#bindgen = "0.69"

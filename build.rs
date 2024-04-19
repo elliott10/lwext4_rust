@@ -82,6 +82,10 @@ fn main() {
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());
 }
 
+#[cfg(target_arch = "x86_64")]
+fn generates_bindings_to_rust(_mpath: &str) {}
+
+#[cfg(not(target_arch = "x86_64"))]
 fn generates_bindings_to_rust(mpath: &str) {
     let bindings = bindgen::Builder::default()
         .use_core()

@@ -98,7 +98,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         unsafe {
             ext4bd
                 .lwext4_mount()
-                .expect("Failed to mount the ext4 file system");
+                .expect("Failed to mount the ext4 file system, perhaps the disk is not an EXT4 file system.");
         }
 
         ext4bd.lwext4_dir_ls();
@@ -112,6 +112,7 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         debug!("OPEN Ext4 block device p_user={:#x}", p_user as usize);
         // DevType: Disk
         if p_user as usize == 0 {
+            error!("Invalid null pointer of p_user");
             return EIO as _;
         }
         //let mut devt = Box::from_raw(p_user as *mut K::DevType);
@@ -123,7 +124,10 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         let seek_off = K::seek(devt, 0, SEEK_END as i32);
         let cur = match seek_off {
             Ok(v) => v,
-            Err(_e) => return EFAULT as _,
+            Err(e) => {
+                error!("dev_open to K::seek failed: {:?}", e);
+                return EFAULT as _;
+            }
         };
 
         (*bdev).part_offset = 0;
@@ -345,7 +349,9 @@ impl<K: KernelDevOp> Ext4BlockWrapper<K> {
         info!("block_group_count = {:x?}", stats.block_group_count);
         info!("blocks_per_group= {:x?}", stats.blocks_per_group);
         info!("inodes_per_group = {:x?}", stats.inodes_per_group);
-        info!("volume_name = {:?}", stats.volume_name);
+
+        let vol_name = unsafe { core::ffi::CStr::from_ptr(&stats.volume_name as _) };
+        info!("volume_name = {:?}", vol_name);
         info!("********************\n");
     }
 

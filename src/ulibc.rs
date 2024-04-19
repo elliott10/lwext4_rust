@@ -4,6 +4,7 @@ use alloc::string::String;
 use core::cmp::min;
 use core::ffi::{c_char, c_int, c_size_t, c_void};
 
+#[cfg(feature = "print")]
 #[no_mangle]
 unsafe extern "C" fn printf(str: *const c_char, mut args: ...) -> c_int {
     // extern "C" { pub fn printf(arg1: *const c_char, ...) -> c_int; }
@@ -15,6 +16,17 @@ unsafe extern "C" fn printf(str: *const c_char, mut args: ...) -> c_int {
     info!("{}", s);
 
     bytes_written
+}
+
+#[cfg(not(feature = "print"))]
+#[no_mangle]
+unsafe extern "C" fn printf(str: *const c_char, mut args: ...) -> c_int {
+    use core::ffi::CStr;
+    let c_str = unsafe { CStr::from_ptr(str) };
+    //let arg1 = args.arg::<usize>();
+
+    info!("[lwext4] {:?}", c_str);
+    0
 }
 
 #[no_mangle]
