@@ -277,8 +277,7 @@ impl VfsNodeOps for FileWrapper {
         let mut file = self.0.borrow_mut();
         let path = file.get_path();
         let path = path.to_str().unwrap();
-        //file.file_open(path, O_RDWR)?;
-        file.file_open(path, O_RDWR | O_CREAT | O_APPEND)?;
+        file.file_open(path, O_RDWR)?;
 
         file.file_seek(offset as i64, SEEK_SET)?;
         let r = file.file_write(buf);
