@@ -60,7 +60,7 @@ qemu: $(img)
 # 8M ext4 fs
 $(img):
 	dd if=/dev/zero of=$@ bs=512 count=16384
-	mkfs.ext4 -F -L ext4-test $@
+	mkfs.ext4 -F -O ^metadata_csum_seed -L ext4-test $@
 	chmod 777 $@
 
 run: build qemu
