@@ -11,6 +11,7 @@
 #define HIGHS (ONES * (UCHAR_MAX / 2 + 1))
 #define HASZERO(x) (((x) - ONES) & ~(x) & HIGHS)
 
+__attribute__((weak)) 
 char *__stpcpy(char *restrict d, const char *restrict s)
 {
 #ifdef __GNUC__
@@ -36,12 +37,14 @@ char *__stpcpy(char *restrict d, const char *restrict s)
         return d;
 }
 
+__attribute__((weak)) 
 char *strcpy(char *restrict dest, const char *restrict src)
 {
         __stpcpy(dest, src);
         return dest;
 }
 
+__attribute__((weak)) 
 int strcmp(const char *l, const char *r)
 {
         for (; *l == *r && *l; l++, r++)
@@ -49,6 +52,7 @@ int strcmp(const char *l, const char *r)
         return *(unsigned char *)l - *(unsigned char *)r;
 }
 
+__attribute__((weak)) 
 int strncmp(const char *_l, const char *_r, size_t n)
 {
         const unsigned char *l = (void *)_l, *r = (void *)_r;
@@ -60,8 +64,10 @@ int strncmp(const char *_l, const char *_r, size_t n)
 }
 
 // fix me
+__attribute__((weak)) 
 FILE *const stdout = NULL;
 
+__attribute__((weak)) 
 int fflush(FILE *f)
 {
         // printf("fflush() is not implemented !\n");
@@ -70,6 +76,7 @@ int fflush(FILE *f)
 
 // +++++++++ uClibc +++++++++
 
+__attribute__((weak)) 
 void *memset(void *s, int c, size_t n)
 {
         register unsigned char *p = (unsigned char *)s;
@@ -84,6 +91,7 @@ void *memset(void *s, int c, size_t n)
 // musl, typedef int (*cmpfun)(const void *, const void *);
 typedef int (*__compar_fn_t)(const void *, const void *);
 typedef int (*__compar_d_fn_t)(const void *, const void *, void *);
+__attribute__((weak)) 
 void qsort_r(void *base,
              size_t nel,
              size_t width,
@@ -140,6 +148,7 @@ void qsort_r(void *base,
         }
 }
 
+__attribute__((weak)) 
 void qsort(void *base,
            size_t nel,
            size_t width,

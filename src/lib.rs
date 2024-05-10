@@ -1,10 +1,11 @@
 #![no_std]
+#![feature(linkage)]
+#![feature(c_variadic, c_size_t)]
+#![feature(associated_type_defaults)]
+
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-
-#![feature(c_variadic, c_size_t)]
-#![feature(associated_type_defaults)]
 
 extern crate alloc;
 

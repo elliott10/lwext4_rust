@@ -5,6 +5,7 @@ use core::cmp::min;
 use core::ffi::{c_char, c_int, c_size_t, c_void};
 
 #[cfg(feature = "print")]
+#[linkage = "weak"]
 #[no_mangle]
 unsafe extern "C" fn printf(str: *const c_char, mut args: ...) -> c_int {
     // extern "C" { pub fn printf(arg1: *const c_char, ...) -> c_int; }
@@ -19,6 +20,7 @@ unsafe extern "C" fn printf(str: *const c_char, mut args: ...) -> c_int {
 }
 
 #[cfg(not(feature = "print"))]
+#[linkage = "weak"]
 #[no_mangle]
 unsafe extern "C" fn printf(str: *const c_char, mut args: ...) -> c_int {
     use core::ffi::CStr;
@@ -34,6 +36,7 @@ pub extern "C" fn ext4_user_malloc(size: c_size_t) -> *mut c_void {
     malloc(size)
 }
 
+#[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn calloc(m: c_size_t, n: c_size_t) -> *mut c_void {
     let mem = malloc(m * n);
@@ -44,6 +47,7 @@ pub extern "C" fn calloc(m: c_size_t, n: c_size_t) -> *mut c_void {
     unsafe { memset(mem, 0, m * n) }
 }
 
+#[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn realloc(memblock: *mut c_void, size: c_size_t) -> *mut c_void {
     if memblock.is_null() {
@@ -78,6 +82,7 @@ struct MemoryControlBlock {
 const CTRL_BLK_SIZE: usize = core::mem::size_of::<MemoryControlBlock>();
 
 /// Allocate size bytes memory and return the memory address.
+#[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn malloc(size: c_size_t) -> *mut c_void {
     // Allocate `(actual length) + 8`. The lowest 8 Bytes are stored in the actual allocated space size.
@@ -94,6 +99,7 @@ pub extern "C" fn malloc(size: c_size_t) -> *mut c_void {
 }
 
 /// Deallocate memory at ptr address
+#[linkage = "weak"]
 #[no_mangle]
 pub extern "C" fn free(ptr: *mut c_void) {
     if ptr.is_null() {
