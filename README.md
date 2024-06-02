@@ -43,9 +43,6 @@ let ext4fs =
 Ext4BlockWrapper::<Disk>::new(disk).expect("failed to initialize EXT4 filesystem");
 ```
 
-### Linking libc
-* _No longer need to implement the libc.a_
-
 ### Compile lwext4_rust separately
 
 ``` sh
@@ -56,7 +53,6 @@ OR If you need to compile the lwext4 in C separately,
 please run `make musl-generic -C c/lwext4 ARCH=<x86_64|riscv64|aarch64>`
 
 ## Dependencies
-* only C library on Rust OS
 * Rust development environment
 * C musl-based cross compile toolchains
 	- [x86_64-linux-musl-gcc](https://musl.cc/x86_64-linux-musl-cross.tgz)
