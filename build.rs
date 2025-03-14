@@ -47,16 +47,19 @@ fn main() {
             .expect("failed to execute process: make lwext4");
         assert!(status.success());
 
-        let cc = &format!("{}-linux-musl-gcc", arch);
-        let output = Command::new(cc)
-            .args(["-print-sysroot"])
-            .output()
-            .expect("failed to execute process: gcc -print-sysroot");
+        if !Path::new("src/bindings.rs").exists() {
+            let cc = &format!("{}-linux-musl-gcc", arch);
+            let output = Command::new(cc)
+                .args(["-print-sysroot"])
+                .output()
+                .expect("failed to execute process: gcc -print-sysroot");
 
-        let sysroot = core::str::from_utf8(&output.stdout).unwrap();
-        let sysroot = sysroot.trim_end();
-        let sysroot_inc = &format!("-I{}/include/", sysroot);
-        generates_bindings_to_rust(sysroot_inc);
+            let sysroot = core::str::from_utf8(&output.stdout).unwrap();
+            let sysroot = sysroot.trim_end();
+            let sysroot_inc = &format!("-I{}/include/", sysroot);
+
+            generates_bindings_to_rust(sysroot_inc);
+        }
     }
 
     /* No longer need to implement the libc.a
@@ -82,10 +85,6 @@ fn main() {
     println!("cargo:rerun-if-changed={}", c_path.to_str().unwrap());
 }
 
-#[cfg(target_arch = "x86_64")]
-fn generates_bindings_to_rust(_mpath: &str) {}
-
-#[cfg(not(target_arch = "x86_64"))]
 fn generates_bindings_to_rust(mpath: &str) {
     let bindings = bindgen::Builder::default()
         .use_core()

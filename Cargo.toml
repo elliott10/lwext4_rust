@@ -20,6 +20,6 @@ print = ["printf-compat"]
 log = "0.4"
 printf-compat = { version = "0.1", default-features = false, optional = true }
 
-#[build-dependencies]
-#[target.'cfg(unix)'.build-dependencies]
-#bindgen = "0.69"
+# See: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+[build-dependencies]
+bindgen = "0.71"
