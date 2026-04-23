@@ -90,7 +90,6 @@ pub extern "C" fn malloc(size: c_size_t) -> *mut c_void {
     unsafe {
         let ptr = alloc(layout);
         assert!(!ptr.is_null(), "malloc failed");
-        //debug!("malloc {}@{:p}", size + CTRL_BLK_SIZE, ptr);
 
         let ptr = ptr.cast::<MemoryControlBlock>();
         ptr.write(MemoryControlBlock { size });
@@ -106,7 +105,6 @@ pub extern "C" fn free(ptr: *mut c_void) {
         warn!("free a null pointer !");
         return;
     }
-    //debug!("free pointer {:p}", ptr);
 
     let ptr = ptr.cast::<MemoryControlBlock>();
     assert!(ptr as usize > CTRL_BLK_SIZE, "free a null pointer"); // ?

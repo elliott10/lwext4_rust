@@ -11,7 +11,7 @@ set(CMAKE_SYSTEM_PROCESSOR ${ARCH})
 # Toolchain settings
 set(TOOLCHAIN_PREFIX ${ARCH}-linux-musl)
 
-set(CMAKE_C_COMPILER    ${TOOLCHAIN_PREFIX}-cc)
+set(CMAKE_C_COMPILER    ${TOOLCHAIN_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER  ${TOOLCHAIN_PREFIX}-c++)
 set(AS                  ${TOOLCHAIN_PREFIX}-as)
 set(AR                  ${TOOLCHAIN_PREFIX}-ar)

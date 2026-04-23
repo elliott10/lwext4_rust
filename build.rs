@@ -22,7 +22,7 @@ fn main() {
         Command::new("git")
             .args(&["apply", lwext4_patch.to_str().unwrap()])
             .current_dir(c_path.clone())
-            .spawn()
+            .status()
             .expect("failed to execute process: git apply patch");
 
         fs::copy(

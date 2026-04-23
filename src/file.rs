@@ -51,7 +51,7 @@ impl Ext4File {
     pub fn file_open(&mut self, path: &str, flags: u32) -> Result<usize, i32> {
         let c_path = CString::new(path).expect("CString::new failed");
         if c_path != self.get_path() {
-            debug!(
+            trace!(
                 "Ext4File file_open, cur path={}, new path={}",
                 self.file_path.to_str().unwrap(),
                 path
@@ -73,13 +73,13 @@ impl Ext4File {
             return Err(r);
         }
         //self.file_desc_map.insert(to_map, fd); // store c_path
-        debug!("file_open {}, mp={:#x}", path, self.file_desc.mp as usize);
+        trace!("file_open {}, mp={:#x}", path, self.file_desc.mp as usize);
         Ok(EOK as usize)
     }
 
     pub fn file_close(&mut self) -> Result<usize, i32> {
         if self.file_desc.mp != core::ptr::null_mut() {
-            debug!("file_close {:?}", self.get_path());
+            trace!("file_close {:?}", self.get_path());
             // self.file_cache_flush()?;
             unsafe {
                 ext4_fclose(&mut self.file_desc);
@@ -101,7 +101,7 @@ impl Ext4File {
                 "r+"
             }
         };
-        debug!("flags_to_cstring: {}", cstr);
+        trace!("flags_to_cstring: {}", cstr);
         CString::new(cstr).expect("CString::new OpenFlags failed")
     }
 
@@ -125,10 +125,10 @@ impl Ext4File {
             drop(CString::from_raw(c_path));
         }
         if r == EOK as i32 {
-            debug!("{:?} {} Exist", mtype, path);
+            trace!("{:?} {} Exist", mtype, path);
             true //Exist
         } else {
-            debug!("{:?} {} No Exist. ext4_inode_exist rc = {}", mtype, path, r);
+            trace!("{:?} {} No Exist. ext4_inode_exist rc = {}", mtype, path, r);
             false
         }
     }
@@ -153,7 +153,7 @@ impl Ext4File {
 
     /// Remove file by path.
     pub fn file_remove(&mut self, path: &str) -> Result<usize, i32> {
-        debug!("file_remove {}", path);
+        trace!("file_remove {}", path);
 
         let c_path = CString::new(path).expect("CString::new failed");
         let c_path = c_path.into_raw();
@@ -202,7 +202,7 @@ impl Ext4File {
             return Err(r);
         }
 
-        debug!("file_read {:?}, len={}", self.get_path(), rw_count);
+        trace!("file_read {:?}, len={}", self.get_path(), rw_count);
 
         Ok(rw_count)
     }
@@ -237,12 +237,12 @@ impl Ext4File {
             error!("ext4_fwrite: rc = {}", r);
             return Err(r);
         }
-        debug!("file_write {:?}, len={}", self.get_path(), rw_count);
+        trace!("file_write {:?}, len={}", self.get_path(), rw_count);
         Ok(rw_count)
     }
 
     pub fn file_truncate(&mut self, size: u64) -> Result<usize, i32> {
-        debug!("file_truncate to {}", size);
+        trace!("file_truncate to {}", size);
         let r = unsafe { ext4_ftruncate(&mut self.file_desc, size) };
         if r != EOK as i32 {
             error!("ext4_ftruncate: rc = {}", r);
@@ -283,12 +283,12 @@ impl Ext4File {
             error!("ext4_mode_get: rc = {}", r);
             return Err(r);
         }
-        debug!("Got file mode={:#x}", mode);
+        trace!("Got file mode={:#x}", mode);
         Ok(mode)
     }
 
     pub fn file_mode_set(&mut self, mode: u32) -> Result<usize, i32> {
-        debug!("file_mode_set to {:#x}", mode);
+        trace!("file_mode_set to {:#x}", mode);
 
         let c_path = self.file_path.clone();
         let c_path = c_path.into_raw();
@@ -325,7 +325,7 @@ impl Ext4File {
                 InodeTypes::EXT4_INODE_MODE_FILE
             }
         };
-        debug!("Inode mode types: {:?}", itypes);
+        trace!("Inode mode types: {:?}", itypes);
 
         itypes
     }
@@ -334,7 +334,7 @@ impl Ext4File {
 
     /// Create new directory
     pub fn dir_mk(&mut self, path: &str) -> Result<usize, i32> {
-        debug!("directory create: {}", path);
+        trace!("directory create: {}", path);
         let c_path = CString::new(path).expect("CString::new failed");
         let c_path = c_path.into_raw();
 
@@ -351,7 +351,7 @@ impl Ext4File {
 
     /// Rename/move directory
     pub fn dir_mv(&mut self, path: &str, new_path: &str) -> Result<usize, i32> {
-        debug!("directory move from {} to {}", path, new_path);
+        trace!("directory move from {} to {}", path, new_path);
 
         let c_path = CString::new(path).expect("CString::new failed");
         let c_path = c_path.into_raw();
@@ -372,7 +372,7 @@ impl Ext4File {
 
     /// Recursive directory remove
     pub fn dir_rm(&mut self, path: &str) -> Result<usize, i32> {
-        debug!("directory recursive remove: {}", path);
+        trace!("directory recursive remove: {}", path);
 
         let c_path = CString::new(path).expect("CString::new failed");
         let c_path = c_path.into_raw();
@@ -414,7 +414,7 @@ impl Ext4File {
                 sss[..len].copy_from_slice(&dentry.name[..len]);
                 sss[len] = 0;
 
-                debug!(
+                trace!(
                     "  {} {}",
                     dentry.inode_type,
                     core::str::from_utf8(&sss).unwrap()
